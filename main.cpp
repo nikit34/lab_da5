@@ -1,6 +1,26 @@
 #include <iostream>
+#include <vector>
+
 
 using namespace std;
+
+class TSuffixTree {
+public:
+    TSuffixTree(string str);
+
+};
+
+TSuffixTree::TSuffixTree(string str){
+
+}
+
+class TArray{
+public:
+    TArray(TSuffixTree tree);
+    std::vector<int> Find(string str);
+private:
+    vector<int> array;
+}
 
 
 int main() {
@@ -11,7 +31,8 @@ int main() {
     cin >> text;
 
     TSuffixTree tree(text + "$");
-    // text + "$"
+    TArray array(tree);
+
     while (cin >> pattern){
 
     }
