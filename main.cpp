@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <set>
+#include <map>
 
 
 using namespace std;
@@ -8,10 +9,37 @@ using namespace std;
 class TSuffixTree {
 public:
     TSuffixTree(string str);
+    set<int> Search(const string& sought);
 
+private:
+    struct TSuffixNode;
+    struct TNodeInfo {
+        TNodeInfo() = default;
+        TNodeInfo(const string* str, TSuffixNode* link, int info_start, int info_size);
+    };
+    struct TSuffixNode {
+        TSuffixNode() = default;
+        TSuffixNode(TSuffixNode* parent);
+
+        map<char, TNodeInfo> links;
+        TSuffixNode* parent = nullptr;
+        TSuffixNode* suffix_link = nullptr;
+    };
+    std::string data;
+    TSuffixNode *advancement;
+    TSuffixNode *root;
 };
 
-TSuffixTree::TSuffixTree(string str){
+TSuffixTree::TSuffixTree(string str)
+:data(move(str)), advancement(new TSuffixNode), root(new TSuffixNode){
+    for (int i = 0; i < this->data.size(); ++i){
+        // advancement->links.emplace(data[i], (&data, root, i, 1));
+    }
+}
+
+set<int> TSuffixTree::Search(const string& sought){
+    if (sought.size() > this->data.size())
+        return {};
 
 }
 
@@ -37,18 +65,18 @@ set<int> TArray::Find(string str){
     long long right = this->index.size();
 
     vector<const char*> tmp(this->index.size());
-    for (size_t i = 0; i < this->index.size(); ++i){
+    for (int i = 0; i < this->index.size(); ++i){
         tmp[i] = this->data.data() + (this->index[i] - 1);
     }
     int buffer_left, buffer_right;
-    for (size_t i = 0; i < str.size(); ++i){
+    for (int i = 0; i < str.size(); ++i){
         buffer_left = left;
         buffer_right = right;
         left = lower_bound(tmp.begin() + buffer_left, tmp.begin() +  buffer_right, str.data(), Compare(i)) - tmp.begin();
         right = upper_bound(tmp.begin() + buffer_right, tmp.begin() + buffer_right, str.data(), Compare(i)) - tmp.begin();
     }
 
-    for (size_t j = left; j < right; ++j) {
+    for (int j = left; j < right; ++j) {
         result.insert(this->index[j]);
     }
     return result;
@@ -61,14 +89,14 @@ ostream& operator <<(ostream& os, const TArray& arr) {
 }
 
 struct Compare {
-    Compare(size_t new_index): comp_index(new_index) {}
+    Compare(int new_index): comp_index(new_index) {}
 
     bool operator ()(const char* left_handler, const char* right_handler) {
         return *(left_handler + comp_index) < *(right_handler + comp_index);
     }
 
 private:
-    size_t comp_index;
+    int comp_index;
 };
 
 int main() {
@@ -82,7 +110,7 @@ int main() {
     TArray array(tree);
 
     set<int> result;
-    uint32_t count = 1;
+    int count = 1;
     while (cin >> pattern){
         result = array.Find(pattern);
         if (!result.empty())
