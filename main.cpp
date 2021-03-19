@@ -10,8 +10,10 @@ int main() {
     string text, pattern;
     cin >> text;
 
+    TSuffixTree tree(text + "$");
+    // text + "$"
     while (cin >> pattern){
-        
+
     }
 
     return 0;
