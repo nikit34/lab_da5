@@ -15,15 +15,21 @@ TSuffixTree::TSuffixTree(string str){
 
 }
 
-class TArray{
+class TArray {
 public:
-    TArray(TSuffixTree tree);
+    TArray(vector<int> new_index, string new_data);
     std::set<int> Find(string str);
+
+    friend ostream& operator <<(ostream& os, const TArray& array);
 
 private:
     vector<int> index;
     string data;
 };
+
+TArray::TArray(vector<int> new_index, string new_data)
+: index(move(new_index)), data(move(new_data))
+{}
 
 set<int> TArray::Find(string str){
     set<int> result;
@@ -38,8 +44,8 @@ set<int> TArray::Find(string str){
     for (size_t i = 0; i < str.size(); ++i){
         buffer_left = left;
         buffer_right = right;
-        left = lower_bound(tmp.begin() + buffer_left, tmp.begin() +  buffer_right, str.data()) - tmp.begin();
-        right = upper_bound(tmp.begin() + buffer_right, tmp.begin() + buffer_right, str.data()) - tmp.begin();
+        left = lower_bound(tmp.begin() + buffer_left, tmp.begin() +  buffer_right, str.data(), Compare(i)) - tmp.begin();
+        right = upper_bound(tmp.begin() + buffer_right, tmp.begin() + buffer_right, str.data(), Compare(i)) - tmp.begin();
     }
 
     for (size_t j = left; j < right; ++j) {
@@ -47,6 +53,23 @@ set<int> TArray::Find(string str){
     }
     return result;
 }
+
+ostream& operator <<(ostream& os, const TArray& arr) {
+    for (int i = 0; i < arr.index.size(); ++i)
+        os << arr.index[i] << " ";
+    return os;
+}
+
+struct Compare {
+    Compare(size_t new_index): comp_index(new_index) {}
+
+    bool operator ()(const char* left_handler, const char* right_handler) {
+        return *(left_handler + comp_index) < *(right_handler + comp_index);
+    }
+
+private:
+    size_t comp_index;
+};
 
 int main() {
     ios::sync_with_stdio(0);
