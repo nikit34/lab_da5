@@ -19,14 +19,14 @@ private:
 
         bool CheckNextSymbol(char s);
         bool OnInfo();
-        TNodeInfo GoDown(std::pair<int, int>);
-        std::pair<int, int> AddNode(int index, TSuffixNode*& preview_created);
+        TNodeInfo GoDown(std::pair<int, int> arc);
+        pair<int, int> AddNode(int index, TSuffixNode*& preview_created);
 
 
         TSuffixNode* link = nullptr;
         int info_size;
         int info_start;
-        string* str;
+        const string* str;
     };
     struct TSuffixNode {
         TSuffixNode() = default;
@@ -43,6 +43,12 @@ private:
     map<TSuffixNode*, int> numeration;
     TSuffixNode *root;
 };
+
+TSuffixTree::TNodeInfo::TNodeInfo(const string* str, TSuffixNode* link, int info_start, int info_size)
+: link(link), info_start(info_start), info_size(info_size), str(str){
+    if(link == nullptr)
+        throw logic_error("Suffix Node is not exists");
+}
 
 TSuffixTree::TSuffixTree(string str)
 :data(move(str)), advancement(new TSuffixNode), root(new TSuffixNode){
@@ -159,6 +165,35 @@ struct Compare {
 private:
     int comp_index;
 };
+
+TSuffixTree::TNodeInfo TSuffixTree::TNodeInfo::GoDown(pair<int, int> arc){
+
+}
+
+pair<int, int> TSuffixTree::TNodeInfo::AddNode(int index, TSuffixNode*& preview_created){
+    if(info_size == 0){
+        if(link->links.count((*str)[index]) == 1)
+            throw logic_error("replacing of exist leaf");
+        else
+            this->link->links.insert(make_pair((*str)[index], TNodeInfo(str, new TSuffixNode(link), index, str->size() - index)));
+        return {0, 0};
+    } else {
+        pair<int, int> first_info = make_pair(info_start, info_size);
+        pair<int, int> second_info = make_pair(info_start + info_size, link->links.at((*str)[info_start]).info_size - info_size);
+        TSuffixNode* new_node = new TSuffixNode(link);
+        TSuffixNode* child = link->links.at((*str)[info_start]).link;
+        child->parent = new_node;
+        link->links.at((*str)[info_start]) = TNodeInfo(str, new_node, first_info.first, first_info.second);
+        new_node->links.insert(make_pair((*str)[second_info.first], TNodeInfo(str, child, second_info.first, second_info.second)));
+        new_node->links.insert(make_pair((*str)[index], TNodeInfo(str, new TSuffixNode(new_node), index, (int)str->size() - index)));
+        if (preview_created != nullptr && preview_created->suffix_link == nullptr) {
+            preview_created->suffix_link = new_node;
+        }
+        preview_created = new_node;
+        return first_info;
+    }
+}
+
 
 int main() {
     ios::sync_with_stdio(0);
