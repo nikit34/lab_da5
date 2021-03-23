@@ -6,10 +6,23 @@
 
 using namespace std;
 
+class TArray {
+public:
+    TArray(vector<int> new_index, string new_data);
+    std::set<int> Find(string str);
+
+    friend ostream& operator <<(ostream& os, const TArray& array);
+
+private:
+    vector<int> index;
+    string data;
+};
+
 class TSuffixTree {
 public:
     TSuffixTree(string str);
     set<int> Search(const string& sought);
+    TArray SetArray();
 
 private:
     struct TSuffixNode;
@@ -21,7 +34,6 @@ private:
         bool OnInfo();
         TNodeInfo GoDown(std::pair<int, int> arc);
         pair<int, int> AddNode(int index, TSuffixNode*& preview_created);
-
 
         TSuffixNode* link = nullptr;
         int info_size;
@@ -36,12 +48,25 @@ private:
         TSuffixNode* parent = nullptr;
         TSuffixNode* suffix_link = nullptr;
     };
+
+    void LexicographicalTraverse(TSuffixNode* node, std::vector<int>& result);
     void FindOccurrencies(TSuffixNode* node, set<int>& set) const;
 
     std::string data;
     TSuffixNode *advancement;
     map<TSuffixNode*, int> numeration;
     TSuffixNode *root;
+};
+
+struct Compare {
+    Compare(int new_index): comp_index(new_index) {}
+
+    bool operator ()(const char* left_handler, const char* right_handler) {
+        return *(left_handler + comp_index) < *(right_handler + comp_index);
+    }
+
+private:
+    int comp_index;
 };
 
 TSuffixTree::TNodeInfo::TNodeInfo(const string* str, TSuffixNode* link, int info_start, int info_size)
@@ -100,6 +125,24 @@ set<int> TSuffixTree::Search(const string& sought){
     return result;
 }
 
+TArray TSuffixTree::SetArray() {
+    std::vector<int> suffix_array;
+    LexicographicalTraverse(root, suffix_array);
+    return TArray(suffix_array, data.substr(0,data.size() - 1));
+}
+
+void TSuffixTree::LexicographicalTraverse(TSuffixNode* node, vector<int>& result) {
+    if (node->links.empty()) {
+        if (numeration.at(node) != data.size()) {
+            result.push_back(numeration.at(node));
+        }
+    } else {
+        for (int i = 0; i < node->links.size(); ++i) {
+            LexicographicalTraverse(node->links[i].link, result);
+        }
+    }
+}
+
 void TSuffixTree::FindOccurrencies(TSuffixNode* node, set<int>& set) const {
     if (node->links.empty()) {
         set.insert(numeration.at(node));
@@ -109,18 +152,6 @@ void TSuffixTree::FindOccurrencies(TSuffixNode* node, set<int>& set) const {
         FindOccurrencies(node->links[i].link, set);
     }
 }
-
-class TArray {
-public:
-    TArray(vector<int> new_index, string new_data);
-    std::set<int> Find(string str);
-
-    friend ostream& operator <<(ostream& os, const TArray& array);
-
-private:
-    vector<int> index;
-    string data;
-};
 
 TArray::TArray(vector<int> new_index, string new_data)
 : index(move(new_index)), data(move(new_data))
@@ -155,30 +186,41 @@ ostream& operator <<(ostream& os, const TArray& arr) {
     return os;
 }
 
-struct Compare {
-    Compare(int new_index): comp_index(new_index) {}
+TSuffixTree::TNodeInfo TSuffixTree::TNodeInfo::GoDown(pair<int, int> info){
+    if (info.second == 0)
+        return *this;
 
-    bool operator ()(const char* left_handler, const char* right_handler) {
-        return *(left_handler + comp_index) < *(right_handler + comp_index);
+    if (info_size != 0) {
+        info = make_pair(info.first - info_size, info_size + info.second);
     }
 
-private:
-    int comp_index;
-};
+    TSuffixNode* node = link;
+    while (true) {
+        pair<int, int> node_info = make_pair(node->links.at((*str)[info.first]).info_start, node->links.at((*str)[info.first]).info_size);
+        if (node_info.second < info.second) {
+            node = node->links.at((*str)[info.first]).link;
+            info = make_pair(info.first + node_info.second, info.second - node_info.second);
+        } else if (node_info.second > info.second) {
+            return TNodeInfo(str, node, node->links.at((*str)[info.first]).info_start, info.second);
+        } else {
+            return TNodeInfo(str, node->links.at((*str)[info.first]).link, 0, 0);
+        }
 
-TSuffixTree::TNodeInfo TSuffixTree::TNodeInfo::GoDown(pair<int, int> arc){
-
+    }
 }
+
+TSuffixTree::TSuffixNode::TSuffixNode(TSuffixTree::TSuffixNode *parent)
+: parent(parent) {}
 
 pair<int, int> TSuffixTree::TNodeInfo::AddNode(int index, TSuffixNode*& preview_created){
     if(info_size == 0){
         if(link->links.count((*str)[index]) == 1)
             throw logic_error("replacing of exist leaf");
         else
-            this->link->links.insert(make_pair((*str)[index], TNodeInfo(str, new TSuffixNode(link), index, str->size() - index)));
+            link->links.insert(make_pair((*str)[index], TNodeInfo(str, new TSuffixNode(link), index, str->size() - index)));
         return {0, 0};
     } else {
-        pair<int, int> first_info = make_pair(info_start, info_size);
+        pair<int, int> first_info = make_pair(this->info_start, this->info_size);
         pair<int, int> second_info = make_pair(info_start + info_size, link->links.at((*str)[info_start]).info_size - info_size);
         TSuffixNode* new_node = new TSuffixNode(link);
         TSuffixNode* child = link->links.at((*str)[info_start]).link;
@@ -194,6 +236,17 @@ pair<int, int> TSuffixTree::TNodeInfo::AddNode(int index, TSuffixNode*& preview_
     }
 }
 
+ostream& operator <<(ostream& os, const set<int>& vec) {
+    bool first = true;
+    for (int i = 0; i < vec.size(); ++i) {
+        if (!first)
+            os << ", ";
+        else
+            first = false;
+        os << i;
+    }
+    return os;
+}
 
 int main() {
     ios::sync_with_stdio(0);
@@ -203,14 +256,14 @@ int main() {
     cin >> text;
 
     TSuffixTree tree(text + "$");
-    TArray array(tree);
+    TArray array = tree.SetArray();
 
     set<int> result;
     int count = 1;
     while (cin >> pattern){
         result = array.Find(pattern);
         if (!result.empty())
-            cout << cout << ": " << result << endl;
+            cout << ": " << result << endl;
         ++count;
     }
     return 0;
