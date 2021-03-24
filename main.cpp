@@ -1,270 +1,209 @@
 #include <iostream>
 #include <vector>
+#include <unordered_map>
+#include <string>
 #include <set>
+#include <algorithm>
 #include <map>
+#include <array>
+#include <tuple>
+
+#include <iostream>
+#include <vector>
+#include <map>
+#include <memory>
+#include <string>
+#include <algorithm>
 
 
 using namespace std;
 
-class TArray {
+class TArray;
+
+class TNode {
 public:
-    TArray(vector<int> new_index, string new_data);
-    std::set<int> Find(string str);
-
-    friend ostream& operator <<(ostream& os, const TArray& array);
-
-private:
-    vector<int> index;
-    string data;
+    map<char, TNode *> links;
+    string::iterator begin, end;
+    TNode *suffix_link;
+    TNode(string::iterator begin, string::iterator end);
+    ~TNode() {};
 };
 
 class TSuffixTree {
 public:
     TSuffixTree(string str);
-    set<int> Search(const string& sought);
-    TArray SetArray();
+    ~TSuffixTree() {};
+
+    friend TArray;
 
 private:
-    struct TSuffixNode;
-    struct TNodeInfo {
-        TNodeInfo() = default;
-        TNodeInfo(const string* str, TSuffixNode* link, int info_start, int info_size);
+    string text;
+    TNode *root;
+    int remainder;
+    TNode *fake_node, *current_node;
+    int current_lenght;
+    string::iterator current_point;
 
-        bool CheckNextSymbol(char s);
-        bool OnInfo();
-        TNodeInfo GoDown(std::pair<int, int> arc);
-        pair<int, int> AddNode(int index, TSuffixNode*& preview_created);
-
-        TSuffixNode* link = nullptr;
-        int info_size;
-        int info_start;
-        const string* str;
-    };
-    struct TSuffixNode {
-        TSuffixNode() = default;
-        TSuffixNode(TSuffixNode* parent);
-
-        map<char, TNodeInfo> links;
-        TSuffixNode* parent = nullptr;
-        TSuffixNode* suffix_link = nullptr;
-    };
-
-    void LexicographicalTraverse(TSuffixNode* node, std::vector<int>& result);
-    void FindOccurrencies(TSuffixNode* node, set<int>& set) const;
-
-    std::string data;
-    TSuffixNode *advancement;
-    map<TSuffixNode*, int> numeration;
-    TSuffixNode *root;
+    int DistancePoint(TNode *node, string::iterator pos);
+    void DeleteTree(TNode *node);
+    bool ReversePoint(string::iterator cur_pos, TNode *node);
+    void FakeSetup(TNode *node);
+    void ExtendPoint(string::iterator point);
+    void DFS(TNode *node, vector<int> &result, int deep);
 };
 
-struct Compare {
-    Compare(int new_index): comp_index(new_index) {}
-
-    bool operator ()(const char* left_handler, const char* right_handler) {
-        return *(left_handler + comp_index) < *(right_handler + comp_index);
-    }
+class TArray {
+public:
+    TArray(TSuffixTree tree);
+    vector<int> Find(string pattern) const;
+    ~TArray() {};
 
 private:
-    int comp_index;
+    string text;
+    vector<int> array;
 };
 
-TSuffixTree::TNodeInfo::TNodeInfo(const string* str, TSuffixNode* link, int info_start, int info_size)
-: link(link), info_start(info_start), info_size(info_size), str(str){
-    if(link == nullptr)
-        throw logic_error("Suffix Node is not exists");
-}
+
 
 TSuffixTree::TSuffixTree(string str)
-:data(move(str)), advancement(new TSuffixNode), root(new TSuffixNode){
-    for (int i = 0; i < this->data.size(); ++i){
-        advancement->links.insert(make_pair(data[i], TNodeInfo(&data, root, i, 1)));
-    }
-    this->root->suffix_link = advancement;
-    TNodeInfo position = TNodeInfo(&data, root, -1, 0);
-    TSuffixNode* preview_created = nullptr;
+: text(str), root(new TNode(text.end(), text.end())), remainder(0) {
+    current_point = text.begin();
+    current_node = fake_node = root->suffix_link = root;
+    current_lenght = 0;
 
-    char symbol;
-    for(int i = 0; i < this->data.size(); ++i){
-        symbol = data[i];
-        while(!position.CheckNextSymbol(symbol)){
-            pair<int, int> arc = position.AddNode(i, preview_created);
+    for (string::iterator it = text.begin(); it != text.end(); ++it)
+        ExtendPoint(it);
+}
+
+TNode::TNode(string::iterator begin, string::iterator end): begin(begin), end(end), suffix_link(0) {}
+
+void TSuffixTree::DeleteTree(TNode *node) {
+    for (map<char, TNode *>::iterator it = node->links.begin(); it != node->links.end(); ++it)
+        DeleteTree(it->second);
+    delete node;
+}
+
+void TSuffixTree::ExtendPoint(string::iterator point) {
+    fake_node = root;
+    ++remainder;
+
+    while (remainder) {
+        if (!current_lenght)
+            current_point = point;
+
+        map<char, TNode *>::iterator it = current_node->links.find(*current_point);
+        TNode *next = (it == current_node->links.end()) ? NULL : it->second;
+        if (!next) {
+            TNode *leaf = new TNode(point, text.end());
+            current_node->links[*current_point] = leaf;
+            FakeSetup(current_node);
+        } else {
+            if (ReversePoint(point, next))
+                continue;
+
+            if (*(next->begin + current_lenght) == *point) {
+                ++current_lenght;
+                FakeSetup(current_node);
+                break;
+            }
+
+            TNode *split = new TNode(next->begin, next->begin + current_lenght);
+            TNode *leaf = new TNode(point, text.end());
+            current_node->links[*current_point] = split;
+
+            split->links[*point] = leaf;
+            next->begin += current_lenght;
+            split->links[*next->begin] = next;
+            FakeSetup(split);
+        }
+
+        --remainder;
+        if (current_node == root && current_lenght) {
+            --current_lenght;
+            current_point = point - remainder + 1;
+        } else {
+            current_node = (current_node->suffix_link) ? current_node->suffix_link : root;
         }
     }
 }
 
-bool TSuffixTree::TNodeInfo::OnInfo(){
-    return this->info_size;
+int TSuffixTree::DistancePoint(TNode *node, string::iterator pos) {
+    return min(node->end, pos + 1) - node->begin;
 }
 
-bool TSuffixTree::TNodeInfo::CheckNextSymbol(char symbol){
-    if(this->OnInfo())
-        return (*str)[info_start + info_size] == symbol;
-    else
-        return this->link->links.count(symbol) != 0;
-}
-
-set<int> TSuffixTree::Search(const string& sought){
-    if (sought.size() > this->data.size())
-        return {};
-    set<int> result;
-    TSuffixNode* current_node = root;
-    int current_index = 0;
-    char symbol;
-    while(current_index < sought.size()){
-        symbol = sought[current_index];
-        if(current_node->links.count(sought[current_index]) == 0)
-            return {};
-        for (int i = 0; i < min<int>(sought.size() - current_index, current_node->links.at(symbol).info_size); ++i)
-            if (sought[current_index + i] != data[current_node->links.at(symbol).info_start + i])
-                return {};
-        current_index += min<int>(sought.size() - current_index, current_node->links.at(symbol).info_size);
-        current_node = current_node->links.at(symbol).link;
+bool TSuffixTree::ReversePoint(string::iterator cur_pos, TNode *node) {
+    if (current_lenght >= DistancePoint(node, cur_pos)) {
+        current_point += DistancePoint(node, cur_pos);
+        current_lenght -= DistancePoint(node, cur_pos);
+        current_node = node;
+        return true;
     }
-    FindOccurrencies(current_node, result);
-    return result;
+    return false;
 }
 
-TArray TSuffixTree::SetArray() {
-    std::vector<int> suffix_array;
-    LexicographicalTraverse(root, suffix_array);
-    return TArray(suffix_array, data.substr(0,data.size() - 1));
+void TSuffixTree::FakeSetup(TNode *node) {
+    if (fake_node != root)
+        fake_node->suffix_link = node;
+    fake_node = node;
 }
 
-void TSuffixTree::LexicographicalTraverse(TSuffixNode* node, vector<int>& result) {
+void TSuffixTree::DFS(TNode *node, vector<int> &result, int deep) {
     if (node->links.empty()) {
-        if (numeration.at(node) != data.size()) {
-            result.push_back(numeration.at(node));
-        }
-    } else {
-        for (int i = 0; i < node->links.size(); ++i) {
-            LexicographicalTraverse(node->links[i].link, result);
-        }
-    }
-}
-
-void TSuffixTree::FindOccurrencies(TSuffixNode* node, set<int>& set) const {
-    if (node->links.empty()) {
-        set.insert(numeration.at(node));
+        result.push_back(text.size() - deep);
         return;
     }
-    for (int i = 0; i < node->links.size(); ++i) {
-        FindOccurrencies(node->links[i].link, set);
+    int tmp;
+    for (map<char, TNode *>::iterator it = node->links.begin(); it != node->links.end(); ++it) {
+        tmp = deep;
+        tmp += it->second->end - it->second->begin;
+        DFS(it->second, result, tmp);
     }
 }
 
-TArray::TArray(vector<int> new_index, string new_data)
-: index(move(new_index)), data(move(new_data))
-{}
+TArray::TArray(TSuffixTree tree):text(tree.text), array() {
+    tree.DFS(tree.root, array, 0);
+    tree.DeleteTree(tree.root);
+}
 
-set<int> TArray::Find(string str){
-    set<int> result;
-    long long left = 0;
-    long long right = this->index.size();
-
-    vector<const char*> tmp(this->index.size());
-    for (int i = 0; i < this->index.size(); ++i){
-        tmp[i] = this->data.data() + (this->index[i] - 1);
-    }
-    int buffer_left, buffer_right;
-    for (int i = 0; i < str.size(); ++i){
-        buffer_left = left;
-        buffer_right = right;
-        left = lower_bound(tmp.begin() + buffer_left, tmp.begin() +  buffer_right, str.data(), Compare(i)) - tmp.begin();
-        right = upper_bound(tmp.begin() + buffer_right, tmp.begin() + buffer_right, str.data(), Compare(i)) - tmp.begin();
+vector<int> TArray::Find(string pattern) {
+    pair<vector<int>::iterator, vector<int>::iterator> range(array.begin(), array.end());
+    for (int i = 0; i < pattern.size() && range.first != range.second; ++i) {
+        range = equal_range(range.first, range.second, numeric_limits<int>::max(), [this, &pattern, &i] (int idx1, int idx2) -> bool {
+            if (idx1 == numeric_limits<int>::max()) {
+                return bool(pattern[i] < text[i + idx2]);
+            } else {
+                return bool(text[i + idx1] < pattern[i]);
+            }
+        });
     }
 
-    for (int j = left; j < right; ++j) {
-        result.insert(this->index[j]);
-    }
+    vector<int> result(range.first, range.second);
+    sort(result.begin(), result.end());
+
     return result;
 }
 
-ostream& operator <<(ostream& os, const TArray& arr) {
-    for (int i = 0; i < arr.index.size(); ++i)
-        os << arr.index[i] << " ";
-    return os;
-}
-
-TSuffixTree::TNodeInfo TSuffixTree::TNodeInfo::GoDown(pair<int, int> info){
-    if (info.second == 0)
-        return *this;
-
-    if (info_size != 0) {
-        info = make_pair(info.first - info_size, info_size + info.second);
-    }
-
-    TSuffixNode* node = link;
-    while (true) {
-        pair<int, int> node_info = make_pair(node->links.at((*str)[info.first]).info_start, node->links.at((*str)[info.first]).info_size);
-        if (node_info.second < info.second) {
-            node = node->links.at((*str)[info.first]).link;
-            info = make_pair(info.first + node_info.second, info.second - node_info.second);
-        } else if (node_info.second > info.second) {
-            return TNodeInfo(str, node, node->links.at((*str)[info.first]).info_start, info.second);
-        } else {
-            return TNodeInfo(str, node->links.at((*str)[info.first]).link, 0, 0);
-        }
-
-    }
-}
-
-TSuffixTree::TSuffixNode::TSuffixNode(TSuffixTree::TSuffixNode *parent)
-: parent(parent) {}
-
-pair<int, int> TSuffixTree::TNodeInfo::AddNode(int index, TSuffixNode*& preview_created){
-    if(info_size == 0){
-        if(link->links.count((*str)[index]) == 1)
-            throw logic_error("replacing of exist leaf");
-        else
-            link->links.insert(make_pair((*str)[index], TNodeInfo(str, new TSuffixNode(link), index, str->size() - index)));
-        return {0, 0};
-    } else {
-        pair<int, int> first_info = make_pair(this->info_start, this->info_size);
-        pair<int, int> second_info = make_pair(info_start + info_size, link->links.at((*str)[info_start]).info_size - info_size);
-        TSuffixNode* new_node = new TSuffixNode(link);
-        TSuffixNode* child = link->links.at((*str)[info_start]).link;
-        child->parent = new_node;
-        link->links.at((*str)[info_start]) = TNodeInfo(str, new_node, first_info.first, first_info.second);
-        new_node->links.insert(make_pair((*str)[second_info.first], TNodeInfo(str, child, second_info.first, second_info.second)));
-        new_node->links.insert(make_pair((*str)[index], TNodeInfo(str, new TSuffixNode(new_node), index, (int)str->size() - index)));
-        if (preview_created != nullptr && preview_created->suffix_link == nullptr) {
-            preview_created->suffix_link = new_node;
-        }
-        preview_created = new_node;
-        return first_info;
-    }
-}
-
-ostream& operator <<(ostream& os, const set<int>& vec) {
-    bool first = true;
-    for (int i = 0; i < vec.size(); ++i) {
-        if (!first)
-            os << ", ";
-        else
-            first = false;
-        os << i;
-    }
-    return os;
-}
-
-int main() {
-    ios::sync_with_stdio(0);
-    cout.tie(0), cin.tie(0);
-
+int main(void)
+{
     string text, pattern;
     cin >> text;
 
     TSuffixTree tree(text + "$");
-    TArray array = tree.SetArray();
+    TArray array(tree);
 
-    set<int> result;
-    int count = 1;
-    while (cin >> pattern){
-        result = array.Find(pattern);
-        if (!result.empty())
-            cout << ": " << result << endl;
-        ++count;
+    for (int cntPattern = 1; cin >> text; ++cntPattern) {
+        vector<int> result = array.Find(text);
+        if (!result.empty()) {
+            cout << cntPattern << ": ";
+            for (int i = 0; i < result.size(); ++i) {
+                cout << result[i] + 1;
+                if (i < result.size() -  1) {
+                    cout << ", ";
+                }
+            }
+            cout << '\n';
+        }
     }
+
     return 0;
 }
