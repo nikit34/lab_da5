@@ -7,16 +7,12 @@
 #include <map>
 #include <array>
 #include <tuple>
-
-#include <iostream>
-#include <vector>
-#include <map>
 #include <memory>
-#include <string>
-#include <algorithm>
+#include <chrono>
 
 
 using namespace std;
+using namespace std::chrono;
 
 class TArray;
 
@@ -185,6 +181,8 @@ vector<int> TArray::Find(string pattern) {
 
 int main(void)
 {
+    auto start = high_resolution_clock::now();
+
     string text, pattern;
     cin >> text;
 
@@ -204,6 +202,10 @@ int main(void)
             cout << '\n';
         }
     }
+    auto stop = high_resolution_clock::now();
+
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << duration.count() << endl;
 
     return 0;
 }
