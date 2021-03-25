@@ -7,12 +7,25 @@
 #include <map>
 #include <array>
 #include <tuple>
+<<<<<<< HEAD
 #include <memory>
 #include <chrono>
 
 
 using namespace std;
 using namespace std::chrono;
+=======
+
+#include <iostream>
+#include <vector>
+#include <map>
+#include <memory>
+#include <string>
+#include <algorithm>
+
+
+using namespace std;
+>>>>>>> 7c6090b... init
 
 class TArray;
 
@@ -163,7 +176,11 @@ TArray::TArray(TSuffixTree tree):text(tree.text), array() {
 
 vector<int> TArray::Find(string pattern) {
     pair<vector<int>::iterator, vector<int>::iterator> range(array.begin(), array.end());
+<<<<<<< HEAD
     for (size_t i = 0; i < pattern.size() && range.first != range.second; ++i) {
+=======
+    for (int i = 0; i < pattern.size() && range.first != range.second; ++i) {
+>>>>>>> 7c6090b... init
         range = equal_range(range.first, range.second, numeric_limits<int>::max(), [this, &pattern, &i] (int idx1, int idx2) -> bool {
             if (idx1 == numeric_limits<int>::max()) {
                 return bool(pattern[i] < text[i + idx2]);
@@ -179,20 +196,33 @@ vector<int> TArray::Find(string pattern) {
     return result;
 }
 
+<<<<<<< HEAD
 int main() {
     // auto start = high_resolution_clock::now();
 
+=======
+int main(void)
+{
+>>>>>>> 7c6090b... init
     string text, pattern;
     cin >> text;
 
     TSuffixTree tree(text + "$");
     TArray array(tree);
 
+<<<<<<< HEAD
     for (size_t i = 1; cin >> text; ++i) {
         vector<int> result = array.Find(text);
         if (!result.empty()) {
             cout << i << ": ";
             for (size_t i = 0; i < result.size(); ++i) {
+=======
+    for (int cntPattern = 1; cin >> text; ++cntPattern) {
+        vector<int> result = array.Find(text);
+        if (!result.empty()) {
+            cout << cntPattern << ": ";
+            for (int i = 0; i < result.size(); ++i) {
+>>>>>>> 7c6090b... init
                 cout << result[i] + 1;
                 if (i < result.size() -  1) {
                     cout << ", ";
@@ -201,10 +231,13 @@ int main() {
             cout << '\n';
         }
     }
+<<<<<<< HEAD
     // auto stop = high_resolution_clock::now();
 
     // auto duration = duration_cast<microseconds>(stop - start);
     // cout << duration.count() << endl;
+=======
+>>>>>>> 7c6090b... init
 
     return 0;
 }
