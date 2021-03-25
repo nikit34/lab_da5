@@ -7,16 +7,12 @@
 #include <map>
 #include <array>
 #include <tuple>
-
-#include <iostream>
-#include <vector>
-#include <map>
 #include <memory>
-#include <string>
-#include <algorithm>
+#include <chrono>
 
 
 using namespace std;
+using namespace std::chrono;
 
 class TArray;
 
@@ -167,7 +163,7 @@ TArray::TArray(TSuffixTree tree):text(tree.text), array() {
 
 vector<int> TArray::Find(string pattern) {
     pair<vector<int>::iterator, vector<int>::iterator> range(array.begin(), array.end());
-    for (int i = 0; i < pattern.size() && range.first != range.second; ++i) {
+    for (size_t i = 0; i < pattern.size() && range.first != range.second; ++i) {
         range = equal_range(range.first, range.second, numeric_limits<int>::max(), [this, &pattern, &i] (int idx1, int idx2) -> bool {
             if (idx1 == numeric_limits<int>::max()) {
                 return bool(pattern[i] < text[i + idx2]);
@@ -183,19 +179,20 @@ vector<int> TArray::Find(string pattern) {
     return result;
 }
 
-int main(void)
-{
+int main() {
+    // auto start = high_resolution_clock::now();
+
     string text, pattern;
     cin >> text;
 
     TSuffixTree tree(text + "$");
     TArray array(tree);
 
-    for (int cntPattern = 1; cin >> text; ++cntPattern) {
+    for (size_t i = 1; cin >> text; ++i) {
         vector<int> result = array.Find(text);
         if (!result.empty()) {
-            cout << cntPattern << ": ";
-            for (int i = 0; i < result.size(); ++i) {
+            cout << i << ": ";
+            for (size_t i = 0; i < result.size(); ++i) {
                 cout << result[i] + 1;
                 if (i < result.size() -  1) {
                     cout << ", ";
@@ -204,6 +201,10 @@ int main(void)
             cout << '\n';
         }
     }
+    // auto stop = high_resolution_clock::now();
+
+    // auto duration = duration_cast<microseconds>(stop - start);
+    // cout << duration.count() << endl;
 
     return 0;
 }
