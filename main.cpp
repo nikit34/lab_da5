@@ -55,7 +55,7 @@ private:
 class TArray {
 public:
     TArray(TSuffixTree tree);
-    vector<int> Find(string pattern) const;
+    vector<int> Find(string pattern);
     ~TArray() {};
 
 private:
