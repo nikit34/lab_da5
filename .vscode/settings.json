@@ -68,5 +68,6 @@
         "unordered_map": "cpp",
         "utility": "cpp",
         "vector": "cpp"
-    }
+    },
+    "python.pythonPath": "C:\\Python39\\python.exe"
 }
