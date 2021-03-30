@@ -7,12 +7,18 @@
 #include <map>
 #include <array>
 #include <tuple>
+
+#include <iostream>
+#include <vector>
+#include <map>
 #include <memory>
-#include <chrono>
+#include <string>
+#include <algorithm>
+// #include <chrono>
 
 
 using namespace std;
-using namespace std::chrono;
+// using namespace chrono;
 
 class TArray;
 
@@ -63,62 +69,62 @@ private:
 
 TSuffixTree::TSuffixTree(string str)
 : text(str), root(new TNode(text.end(), text.end())), remainder(0) {
-    current_point = text.begin();
-    current_node = fake_node = root->suffix_link = root;
-    current_lenght = 0;
+    this->current_point = text.begin();
+    this->current_node = this->fake_node = root->suffix_link = root;
+    this->current_lenght = 0;
 
     for (string::iterator it = text.begin(); it != text.end(); ++it)
-        ExtendPoint(it);
+        this->ExtendPoint(it);
 }
 
 TNode::TNode(string::iterator begin, string::iterator end): begin(begin), end(end), suffix_link(0) {}
 
 void TSuffixTree::DeleteTree(TNode *node) {
     for (map<char, TNode *>::iterator it = node->links.begin(); it != node->links.end(); ++it)
-        DeleteTree(it->second);
+        this->DeleteTree(it->second);
     delete node;
 }
 
 void TSuffixTree::ExtendPoint(string::iterator point) {
-    fake_node = root;
-    ++remainder;
+    this->fake_node = this->root;
+    ++(this->remainder);
 
-    while (remainder) {
-        if (!current_lenght)
-            current_point = point;
+    while (this->remainder) {
+        if (!this->current_lenght)
+            this->current_point = point;
 
-        map<char, TNode *>::iterator it = current_node->links.find(*current_point);
-        TNode *next = (it == current_node->links.end()) ? NULL : it->second;
+        map<char, TNode *>::iterator it = this->current_node->links.find(*this->current_point);
+        TNode *next = (it == this->current_node->links.end()) ? nullptr : it->second;
         if (!next) {
-            TNode *leaf = new TNode(point, text.end());
-            current_node->links[*current_point] = leaf;
-            FakeSetup(current_node);
+            TNode *leaf = new TNode(point, this->text.end());
+            this->current_node->links[*this->current_point] = leaf;
+            this->FakeSetup(this->current_node);
         } else {
-            if (ReversePoint(point, next))
+            if (this->ReversePoint(point, next))
                 continue;
 
-            if (*(next->begin + current_lenght) == *point) {
-                ++current_lenght;
-                FakeSetup(current_node);
+            if (*(next->begin + this->current_lenght) == *point) {
+                ++(this->current_lenght);
+                this->FakeSetup(this->current_node);
                 break;
             }
 
-            TNode *split = new TNode(next->begin, next->begin + current_lenght);
-            TNode *leaf = new TNode(point, text.end());
-            current_node->links[*current_point] = split;
+            TNode *split = new TNode(next->begin, next->begin + this->current_lenght);
+            TNode *leaf = new TNode(point, this->text.end());
+            this->current_node->links[*this->current_point] = split;
 
             split->links[*point] = leaf;
-            next->begin += current_lenght;
+            next->begin += this->current_lenght;
             split->links[*next->begin] = next;
-            FakeSetup(split);
+            this->FakeSetup(split);
         }
 
-        --remainder;
-        if (current_node == root && current_lenght) {
-            --current_lenght;
-            current_point = point - remainder + 1;
+        --(this->remainder);
+        if (this->current_node == this->root && this->current_lenght) {
+            --(this->current_lenght);
+            this->current_point = point - this->remainder + 1;
         } else {
-            current_node = (current_node->suffix_link) ? current_node->suffix_link : root;
+            this->current_node = (this->current_node->suffix_link) ? this->current_node->suffix_link : this->root;
         }
     }
 }
@@ -128,60 +134,81 @@ int TSuffixTree::DistancePoint(TNode *node, string::iterator pos) {
 }
 
 bool TSuffixTree::ReversePoint(string::iterator cur_pos, TNode *node) {
-    if (current_lenght >= DistancePoint(node, cur_pos)) {
-        current_point += DistancePoint(node, cur_pos);
-        current_lenght -= DistancePoint(node, cur_pos);
-        current_node = node;
+    if (this->current_lenght >= this->DistancePoint(node, cur_pos)) {
+        this->current_point += this->DistancePoint(node, cur_pos);
+        this->current_lenght -= this->DistancePoint(node, cur_pos);
+        this->current_node = node;
         return true;
     }
     return false;
 }
 
 void TSuffixTree::FakeSetup(TNode *node) {
-    if (fake_node != root)
-        fake_node->suffix_link = node;
-    fake_node = node;
+    if (this->fake_node != this->root)
+        this->fake_node->suffix_link = node;
+    this->fake_node = node;
 }
 
 void TSuffixTree::DFS(TNode *node, vector<int> &result, int deep) {
     if (node->links.empty()) {
-        result.push_back(text.size() - deep);
+        result.push_back(this->text.size() - deep);
         return;
     }
     int tmp;
     for (map<char, TNode *>::iterator it = node->links.begin(); it != node->links.end(); ++it) {
         tmp = deep;
         tmp += it->second->end - it->second->begin;
-        DFS(it->second, result, tmp);
+        this->DFS(it->second, result, tmp);
     }
 }
 
-TArray::TArray(TSuffixTree tree):text(tree.text), array() {
+TArray::TArray(TSuffixTree tree) : text(tree.text), array() {
     tree.DFS(tree.root, array, 0);
     tree.DeleteTree(tree.root);
 }
 
 vector<int> TArray::Find(string pattern) {
-    pair<vector<int>::iterator, vector<int>::iterator> range(array.begin(), array.end());
+
+    pair<vector<int>::iterator, vector<int>::iterator> range(this->array.begin(), this->array.end());
     for (int i = 0; i < pattern.size() && range.first != range.second; ++i) {
+        // возврат левой и правой равной границы
         range = equal_range(range.first, range.second, numeric_limits<int>::max(), [this, &pattern, &i] (int idx1, int idx2) -> bool {
             if (idx1 == numeric_limits<int>::max()) {
-                return bool(pattern[i] < text[i + idx2]);
+                return bool(pattern[i] < this->text[i + idx2]);
             } else {
-                return bool(text[i + idx1] < pattern[i]);
+                return bool(this->text[i + idx1] < pattern[i]);
             }
         });
     }
-
     vector<int> result(range.first, range.second);
     sort(result.begin(), result.end());
 
     return result;
+
+
+    // set<long long> result;
+    // long long left = 0;
+    // long long right = array.size();
+    // vector<const char*> tempArray(array.size());
+    // for (size_t i = 0; i < array.size(); ++i) {
+    //     tempArray[i] = data.data() + (array[i] - 1);
+    // }
+    // for (size_t i = 0; i < sub.size(); ++i) {
+    //     long long localLeft = left;
+    //     long long localRight = right;
+    //     left = lower_bound(tempArray.begin() + localLeft, tempArray.begin() + localRight, sub.data(), Compare(i)) - tempArray.begin();
+    //     right = upper_bound(tempArray.begin() + localLeft, tempArray.begin() + localRight, sub.data(), Compare(i)) - tempArray.begin();
+    // }
+    // for (size_t j = left; j < right; ++j) {
+    //     result.insert(array[j]);
+    // }
+
+    // return result;
+
 }
 
-int main(void)
-{
-    auto start = high_resolution_clock::now();
+int main(){
+    // auto start = high_resolution_clock::now();
 
     string text, pattern;
     cin >> text;
@@ -189,23 +216,26 @@ int main(void)
     TSuffixTree tree(text + "$");
     TArray array(tree);
 
-    for (int cntPattern = 1; cin >> text; ++cntPattern) {
-        vector<int> result = array.Find(text);
+    vector<int> result;
+    int res_size;
+    for (int i = 1; cin >> text; ++i) {
+        result = array.Find(text);
+        res_size = result.size();
         if (!result.empty()) {
-            cout << cntPattern << ": ";
-            for (int i = 0; i < result.size(); ++i) {
-                cout << result[i] + 1;
-                if (i < result.size() -  1) {
+            cout << i << ": ";
+            for (int j = 0; j < res_size; ++j) {
+                cout << result[j] + 1;
+                if (j < res_size -  1) {
                     cout << ", ";
                 }
             }
-            cout << '\n';
+            cout << endl;
         }
     }
-    auto stop = high_resolution_clock::now();
+    // auto stop = high_resolution_clock::now();
 
-    auto duration = duration_cast<microseconds>(stop - start);
-    cout << duration.count() << endl;
+    // auto duration = duration_cast<microseconds>(stop - start);
+    // cout << duration.count() << endl;
 
     return 0;
 }
