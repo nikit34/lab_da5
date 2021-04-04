@@ -14,11 +14,11 @@
 #include <memory>
 #include <string>
 #include <algorithm>
-// #include <chrono>
+#include <chrono>
 
 
 using namespace std;
-// using namespace chrono;
+using namespace chrono;
 
 class TArray;
 
@@ -208,7 +208,7 @@ vector<int> TArray::Find(string& pattern) {
 }
 
 int main(){
-    // auto start = high_resolution_clock::now();
+    auto start = high_resolution_clock::now();
 
     string text, pattern;
     cin >> text;
@@ -227,31 +227,31 @@ int main(){
     //
 
     for (int i = 1; cin >> pattern; ++i) {
-        // result = array.Find(pattern);
-        // res_size = result.size();
-        // if (!result.empty()) {
-        //     cout << i << ": ";
-        //     for (int j = 0; j < res_size; ++j) {
-        //         cout << result[j] + 1;
-        //         if (j < res_size -  1) {
-        //             cout << ", ";
-        //         }
-        //     }
-        //     cout << endl;
-        // }
-
-
-        index = text.find(pattern);
-        if (index!=std::string::npos){
+        result = array.Find(pattern);
+        res_size = result.size();
+        if (!result.empty()) {
             cout << i << ": ";
-            cout << index + 1;
-             cout << endl;
+            for (int j = 0; j < res_size; ++j) {
+                cout << result[j] + 1;
+                if (j < res_size -  1) {
+                    cout << ", ";
+                }
+            }
+            cout << endl;
         }
-    }
-    // auto stop = high_resolution_clock::now();
 
-    // auto duration = duration_cast<microseconds>(stop - start);
-    // cout << duration.count() << endl;
+
+        // index = text.find(pattern);
+        // if (index!=std::string::npos){
+        //     cout << i << ": ";
+        //     cout << index + 1;
+        //      cout << endl;
+        // }
+    }
+    auto stop = high_resolution_clock::now();
+
+    auto duration = duration_cast<microseconds>(stop - start);
+    cout << duration.count() << endl;
 
     return 0;
 }
