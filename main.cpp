@@ -79,6 +79,17 @@ TSuffixTree::TSuffixTree(string str)
 
 TNode::TNode(string::iterator begin, string::iterator end): begin(begin), end(end), suffix_link(0) {}
 
+// struct Compare {
+//     Compare(int new_index): comp_index(new_index) {}
+
+//     bool operator ()(const char* left_handler, const char* right_handler) {
+//         return *(left_handler + comp_index) < *(right_handler + comp_index);
+//     }
+
+// private:
+//     int comp_index;
+// };
+
 void TSuffixTree::DeleteTree(TNode *node) {
     for (map<char, TNode *>::iterator it = node->links.begin(); it != node->links.end(); ++it)
         this->DeleteTree(it->second);
@@ -185,7 +196,6 @@ vector<int> TArray::Find(string& pattern) {
 
     return result;
 
-
     // set<long long> result;
     // long long left = 0;
     // long long right = array.size();
@@ -202,9 +212,7 @@ vector<int> TArray::Find(string& pattern) {
     // for (size_t j = left; j < right; ++j) {
     //     result.insert(array[j]);
     // }
-
     // return result;
-
 }
 
 int main(){
@@ -227,29 +235,36 @@ int main(){
     //
 
     for (int i = 1; cin >> pattern; ++i) {
-        result = array.Find(pattern);
-        res_size = result.size();
-        if (!result.empty()) {
-            cout << i << ": ";
-            for (int j = 0; j < res_size; ++j) {
-                cout << result[j] + 1;
-                if (j < res_size -  1) {
-                    cout << ", ";
-                }
-            }
-            cout << endl;
-        }
 
-
-        // index = text.find(pattern);
-        // if (index!=std::string::npos){
+        // for Castom Find
+        // result = array.Find(pattern);
+        // res_size = result.size();
+        // if (!result.empty()) {
         //     cout << i << ": ";
-        //     cout << index + 1;
-        //      cout << endl;
+        //     for (int j = 0; j < res_size; ++j) {
+        //         cout << result[j] + 1;
+        //         if (j < res_size -  1) {
+        //             cout << ", ";
+        //         }
+        //     }
+        //     cout << endl;
         // }
+
+        // for std find
+        index = 0;
+        cout << i << ": ";
+        while (true) {
+            index = text.find(pattern, index);
+            if (index != string::npos) {
+                ++index;
+                cout << index << ", ";
+            } else {
+                break;
+            }
+        }
+        cout << endl;
     }
     auto stop = high_resolution_clock::now();
-
     auto duration = duration_cast<microseconds>(stop - start);
     cout << duration.count() << endl;
 
